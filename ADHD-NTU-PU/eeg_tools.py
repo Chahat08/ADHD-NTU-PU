@@ -43,6 +43,7 @@ def toolkit_help():
     print('FUNC: plot_all_in_one(file)','ARGS: file name in reqd. format', 'USE: plot all channel data in one graph, every channel centered at x-axis', sep='\n', end='\n'+'--'*50+'\n')
     print('FUNC: plot_eeg(file)','ARGS: file name in reqd. format', 'USE: plot all channel data in one graph, seperated: main eeg-like plot', sep='\n', end='\n'+'--'*50+'\n')
     print('FUNC: plot_single_channel(file, num=0, name='')','ARGS: file name in reqd. format, reqd. channel name or number', 'USE: plot just a single channel. pass it\'s name or number as kwarg', sep='\n', end='\n'+'--'*50+'\n')
+    print('FUNC: zoom_into_channel_segment(file, num=0, name='', x1=0, x2=256*180)','ARGS: file name in reqd. format, reqd. channel name or number, segment start and segment end in seconds', 'USE: plot a zoomed in segment for a single channel, pass channel name/number and the segment start and end in seconds.', sep='\n', end='\n'+'--'*50+'\n')
     print('FUNC: plot_all_single_channels(file)','ARGS: file name in reqd. format', 'USE: plot all 19 channels in seperate graphs', sep='\n', end='\n'+'--'*50+'\n')
     print('FUNC: plot_3d(file, cm=\'magma\')','ARGS: file name in reqd. format, optional color map', 'USE: 3d plot for all channels for the full 3 mins. optional arg for color map.', sep='\n', end='\n'+'--'*50+'\n')
     
@@ -89,14 +90,16 @@ def channel_name_to_num(name):
             n=i
     return n
 
-# main visualisation functions
+
+"VISUALISATION FUNCTIONS"
 
 # plot all channel data in one graph, every channel centered at x-axis
 def plot_all_in_one(file):
     eyes, label, sid, stat = file.lower().split('_')
     file = loadmat(resolve_path(eyes, label, sid, stat))
     
-    plt.figure()
+    plt.figure(figsize=(16,8))
+    plt.grid()
     plt.plot(file[eyes.upper()+'_Data'])
     plt.legend(channels, ncol=2, bbox_to_anchor=(1.0, 1.0))
     plt.title(sid+' '+eyes.upper()+' '+label.upper()+' '+stat.upper())
@@ -135,6 +138,30 @@ def plot_single_channel(file, num=0, name=''):
         n=channel_name_to_num(name)
     else: n=num-1 # cuz channel idx 0 = 1st channel
     
+    plt.figure(figsize=(16,4))
+    plt.grid()
+    plt.plot(np.transpose(file[eyes.upper()+'_Data'])[n])
+    plt.legend([channels[n]])
+    plt.title(sid+' '+eyes.upper()+' '+label.upper()+' '+stat.upper()+' '+ channels[n], size='large')
+    plt.xlabel('Seconds')
+    plt.ylabel('Sensor Value (uV)')
+    
+# plot a zoomed in segment for a single channel, pass channel name/number and the segment start and end in seconds.
+def zoom_into_channel_segment(file, num=0, name='', x1=0, x2=256*180):
+    if num==0 and name=='':
+        print('NO CHANNEL PASSED')
+        return
+    
+    eyes, label, sid, stat = file.lower().split('_')
+    file = loadmat(resolve_path(eyes, label, sid, stat))
+    
+    if num==0:
+        n=channel_name_to_num(name)
+    else: n=num-1 # cuz channel idx 0 = 1st channel
+    
+    plt.figure(figsize=(16,4))
+    plt.grid()
+    plt.xlim(x1, x2)
     plt.plot(np.transpose(file[eyes.upper()+'_Data'])[n])
     plt.legend([channels[n]])
     plt.title(sid+' '+eyes.upper()+' '+label.upper()+' '+stat.upper()+' '+ channels[n], size='large')
@@ -149,7 +176,8 @@ def plot_all_single_channels(file):
     trans = np.transpose(file[eyes.upper()+'_Data'])
     x=0
     for channel_data in trans:
-        plt.figure(x)
+        plt.figure(x, figsize=(16,4))
+        plt.grid()
         plt.plot(trans[x])
         plt.legend([channels[x]])
         plt.title(sid+' '+eyes.upper()+' '+label.upper()+' '+stat.upper()+' '+ channels[x], size='large')
